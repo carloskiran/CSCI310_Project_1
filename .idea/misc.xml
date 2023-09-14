@@ -5,6 +5,8 @@
       <map>
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.13179347826086957" />
         <entry key="app/src/main/res/layout/custom_cell_layout.xml" value="0.13179347826086957" />
+        <entry key="app/src/main/res/layout/end_screen.xml" value="0.13179347826086957" />
+        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.173" />
       </map>
     </option>
   </component>

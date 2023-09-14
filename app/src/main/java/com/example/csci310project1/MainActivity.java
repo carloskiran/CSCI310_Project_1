@@ -2,22 +2,22 @@ package com.example.csci310project1;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.gridlayout.widget.GridLayout;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Button;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int COLUMN_COUNT = 10;
     private static final int ROW_COUNT = 12;
-    private boolean flagging;
+    private static final int BOMB_COUNT = 4;
 
     private static final int[] iCombinations = {-1, -1, -1, 0, 1, 1, 1, 0};
     private static final int[] jCombinations = {-1, 0, 1, 1, 1, 0, -1, -1};
@@ -26,6 +26,13 @@ public class MainActivity extends AppCompatActivity {
     // when a TextView is clicked, we know which cell it is
     private ArrayList<TextView> cell_tvs;
     private ArrayList<Cell> cells;
+    private ArrayList<Integer> bombIndexes;
+    private int flags;
+    private int bombs;
+    private int covered;
+    private boolean flagging;
+    private boolean hasWon;
+    private boolean hasEnded;
 
     private int dpToPixel(int dp) {
         float density = Resources.getSystem().getDisplayMetrics().density;
@@ -39,8 +46,14 @@ public class MainActivity extends AppCompatActivity {
 
         cell_tvs = new ArrayList<TextView>();
         cells = new ArrayList<Cell>();
+        bombIndexes = new ArrayList<Integer>();
 
         flagging = false;
+        hasWon = false;
+        hasEnded = false;
+        flags = 0;
+        bombs = 0;
+        covered = COLUMN_COUNT * ROW_COUNT;
 
         // dynamically created cells
         GridLayout grid = (GridLayout) findViewById(R.id.gridLayout01);
@@ -65,12 +78,21 @@ public class MainActivity extends AppCompatActivity {
                 cell_tvs.add(tv);
 
                 Cell c = new Cell();
-
                 cells.add(c);
             }
         }
 
-        cells.get(13).bomb = true;
+        //place bombs at 4 random cells
+        Random rand = new Random();
+        while(bombs < BOMB_COUNT) {
+            int index = rand.nextInt(COLUMN_COUNT * ROW_COUNT - 1);
+            Cell tempC = cells.get(index);
+            if(!tempC.bomb) {
+                tempC.bomb = true;
+                bombIndexes.add(index);
+                bombs++;
+            }
+        }
     }
 
     private int findIndexOfCellTextView(TextView tv) {
@@ -82,18 +104,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClickTV(View view){
-        TextView tv = (TextView) view;
-        int n = findIndexOfCellTextView(tv);
-        Cell c = cells.get(n);
-        if(!flagging) {//mining code
-            //check if a bomb
-            if(c.bomb) {//loose
-
-            } else {//mine this square and all neighbours
-                mining(c, tv, n);
+        if(!hasEnded) {//only play if the game has not ended
+            TextView tv = (TextView) view;
+            int n = findIndexOfCellTextView(tv);
+            Cell c = cells.get(n);
+            if (!flagging) {//mining code
+                //check if a bomb
+                if (c.bomb) {//loose
+                    hasEnded = true;
+                    revealBombs();
+                } else if (!c.flagged) {//mine this square and all neighbours
+                    mining(c, tv, n);
+                }
+            } else { //flagging code
+                flagging(c, tv);
             }
-        } else { //flagging code
-            flagging(c, tv);
+        } else {
+            Intent intent = new Intent(this, PlayAgain.class);
+            intent.putExtra("Won", hasWon);
+            startActivity(intent);
         }
     }
 
@@ -114,9 +143,11 @@ public class MainActivity extends AppCompatActivity {
             tv.setText("");
             tv.setBackgroundColor(Color.parseColor("lime"));
             c.flagged = false;
+            flags--;
         } else {
             tv.setText(getResources().getString(R.string.flag));
             c.flagged = true;
+            flags++;
         }
     }
 
@@ -127,6 +158,9 @@ public class MainActivity extends AppCompatActivity {
         //set the background to gray
         tv.setBackgroundColor(Color.LTGRAY);
         tv.setTextColor(Color.GRAY);
+
+        //decrease the covered count
+        covered--;
 
         //go through all 8 neighbours and check for bombs
         int bombCount = 0;
@@ -158,12 +192,28 @@ public class MainActivity extends AppCompatActivity {
                 Cell tempC = cells.get(tempN);
                 TextView tempTV = cell_tvs.get(tempN);
                 if(!tempC.mined && !tempC.flagged) {
-                    mining(cells.get(tempN), cell_tvs.get(tempN), tempN);
+                    mining(tempC, tempTV, tempN);
                 }
             }
-
         } else {//print the bombcount
             tv.setText(Integer.toString(bombCount));
         }
+
+
+        //check for win conditions
+        if(covered == BOMB_COUNT) {
+            hasWon = true;
+            hasEnded = true;
+            revealBombs();
+        }
     }
+
+    //helper function to reveal bombs
+    public void revealBombs() {
+        for(int i = 0; i < BOMB_COUNT; i++) {
+            int index = bombIndexes.get(i);
+            cell_tvs.get(index).setText(getResources().getString(R.string.mine));
+        }
+    }
+
 }
