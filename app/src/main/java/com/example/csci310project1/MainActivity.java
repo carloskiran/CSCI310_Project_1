@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Button;
+import android.os.Handler;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -30,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private int flags;
     private int bombs;
     private int covered;
+    private int clock;
     private boolean flagging;
     private boolean hasWon;
     private boolean hasEnded;
@@ -53,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
         hasEnded = false;
         flags = 0;
         bombs = 0;
+        clock = 0;
         covered = COLUMN_COUNT * ROW_COUNT;
 
         // dynamically created cells
@@ -93,6 +96,14 @@ public class MainActivity extends AppCompatActivity {
                 bombs++;
             }
         }
+
+        //set the flag count
+        TextView textView = (TextView) findViewById(R.id.flags);
+        int flagsLeft = BOMB_COUNT - flags;
+        String flagMessage = getResources().getString(R.string.flag) + " " + flagsLeft;
+        textView.setText(flagMessage);
+
+        runTimer();
     }
 
     private int findIndexOfCellTextView(TextView tv) {
@@ -122,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Intent intent = new Intent(this, PlayAgain.class);
             intent.putExtra("Won", hasWon);
+            intent.putExtra("Time", clock);
             startActivity(intent);
         }
     }
@@ -137,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //helper function for flagging
-    public void flagging(Cell c, TextView tv) {
+    private void flagging(Cell c, TextView tv) {
         //check if the cell has flagged or not
         if(c.flagged) {
             tv.setText("");
@@ -149,10 +161,16 @@ public class MainActivity extends AppCompatActivity {
             c.flagged = true;
             flags++;
         }
+
+        //update the flag count
+        TextView textView = (TextView) findViewById(R.id.flags);
+        int flagsLeft = BOMB_COUNT - flags;
+        String flagMessage = getResources().getString(R.string.flag) + " " + flagsLeft;
+        textView.setText(flagMessage);
     }
 
     //helper function for mining
-    public void mining(Cell c, TextView tv, int n) {
+    private void mining(Cell c, TextView tv, int n) {
         //change the mined state
         c.mined = true;
         //set the background to gray
@@ -209,11 +227,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //helper function to reveal bombs
-    public void revealBombs() {
+    private void revealBombs() {
         for(int i = 0; i < BOMB_COUNT; i++) {
             int index = bombIndexes.get(i);
             cell_tvs.get(index).setText(getResources().getString(R.string.mine));
         }
     }
 
+    //function to run the stopwatch
+    private void runTimer() {
+        final TextView timeView = (TextView) findViewById(R.id.timeview);
+        final Handler handler = new Handler();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                String time = getResources().getString(R.string.clock) + " " + Integer.toString(clock);
+                timeView.setText(time);
+
+                if(!hasEnded) {
+                    clock++;
+                }
+                handler.postDelayed(this, 1000);
+            }
+        });
+    }
 }

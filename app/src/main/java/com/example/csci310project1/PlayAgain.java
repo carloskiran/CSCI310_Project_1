@@ -16,11 +16,12 @@ public class PlayAgain extends AppCompatActivity {
 
         Intent intent = getIntent();
         boolean won = intent.getBooleanExtra("Won", false);
-        String message;
+        int time = intent.getIntExtra("Time", 0);
+        String message = "Used " + Integer.toString(time) + " seconds.\n";
         if(won) {
-            message = "You won.\nGood Job!";
+            message += "You won.\nGood Job!";
         } else {
-            message = "You lost.\nSorry";
+            message += "You lost.\nSorry";
         }
 
         TextView textView = (TextView) findViewById(R.id.textView);
